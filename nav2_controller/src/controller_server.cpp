@@ -562,6 +562,14 @@ void ControllerServer::updateGlobalPath()
 void ControllerServer::publishVelocity(const geometry_msgs::msg::TwistStamped & velocity)
 {
   auto cmd_vel = std::make_unique<geometry_msgs::msg::Twist>(velocity.twist);
+  /* in nav2_regulated_pure_pursuit
+  cmd_vel.twist.angular.y = curvature;
+  cmd_vel.twist.linear.y = dist_to_cusp;
+  cmd_vel.twist.linear.z = lookahead_dist;
+  */
+  cmd_vel.angular.y = velocity.twist.angular.y;
+  cmd_vel.linear.y = velocity.twist.linear.y;
+  cmd_vel.linear.z = velocity.twist.linear.z;
   if (vel_publisher_->is_activated() && vel_publisher_->get_subscription_count() > 0) {
     vel_publisher_->publish(std::move(cmd_vel));
   }
