@@ -300,14 +300,17 @@ geometry_msgs::msg::TwistStamped RegulatedPurePursuitController::computeVelocity
   // Find look ahead distance and point on path and publish
   double lookahead_dist = getLookAheadDistance(speed);
 
+  // Cusp check
+  double dist_to_cusp = findVelocitySignChange(transformed_plan);
+  RCLCPP_INFO(logger_, "Distance to cusp : %f", dist_to_cusp);
+
   // Check for reverse driving
   if (allow_reversing_) {
-    // Cusp check
-    double dist_to_cusp = findVelocitySignChange(transformed_plan);
 
     // if the lookahead distance is further than the cusp, use the cusp distance instead
     if (dist_to_cusp < lookahead_dist) {
       lookahead_dist = dist_to_cusp;
+      RCLCPP_INFO(logger_, "Cusp is nearer than looakhead point -> using this distance as lookahead distance !");
     }
   }
 
@@ -326,6 +329,7 @@ geometry_msgs::msg::TwistStamped RegulatedPurePursuitController::computeVelocity
   double curvature = 0.0;
   if (carrot_dist2 > 0.001) {
     curvature = 2.0 * carrot_pose.pose.position.y / carrot_dist2;
+    RCLCPP_INFO(logger_, "Curvature of the path is : %f", curvature);
   }
 
   // Setting the velocity direction
@@ -364,6 +368,12 @@ geometry_msgs::msg::TwistStamped RegulatedPurePursuitController::computeVelocity
   cmd_vel.header = pose.header;
   cmd_vel.twist.linear.x = linear_vel;
   cmd_vel.twist.angular.z = angular_vel;
+
+  // our own data
+  cmd_vel.twist.angular.y = curvature;
+  cmd_vel.twist.linear.y = dist_to_cusp;
+  cmd_vel.twist.linear.z = lookahead_dist;
+
   return cmd_vel;
 }
 
